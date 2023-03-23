@@ -11,6 +11,16 @@ class awscliService:
     ACCESS_KEY_ID = ''
     SECRET_ACCESS_KEY = ''
 
+# |Good parts:
+# |- The code uses the boto3 library to interact with the AWS EC2 service and retrieve information about running instances.
+# |- It filters the instances that are in a "running" state and extracts their name and private IP address.
+# |- It then formats this information into a list of dictionaries, which is used to create a Pandas DataFrame.
+# |- The DataFrame is then exported to a CSV file.
+# |
+# |Bad parts:
+# |- The code does not handle exceptions in a specific way, it just prints the error message to the console. This can make it difficult to debug issues.
+# |- The code assumes that all instances have a "Name" tag, which may not always be the case.
+# |- The code does not provide any options for filtering or sorting the instances based on different criteria.
     def get_information(self):
         session = boto3.Session(
             aws_access_key_id=self.ACCESS_KEY_ID,
@@ -30,9 +40,9 @@ class awscliService:
                         for tag in instance['Tags']:
                             if tag['Key'] == 'Name':
                                 name = tag['Value']
+                        name, group, tag = self.change_instance_name(name)
                         print("instance Name: ", name)
                         print("PrivateIpAddress", instance['PrivateIpAddress'])
-                        name, group, tag = self.change_instance_name(name)
                         data.append({
                             'Groups':group,
                             'Label': name,
@@ -41,9 +51,25 @@ class awscliService:
                             'Protocol': 'ssh',
                             'Port': '22'
                         })
-                except Exception as e : 
-                    print(e)
+                except KeyError as e:
+                    print(f"An error occurred: {type(e).__name__}: {str(e)}")
+                except Exception as e:
+                    print(f"An error occurred: {type(e).__name__}: {str(e)}")
+
+
+        # 람다를 쓰면 안에서 변수를 못만들기 떄문에 다 고쳐야되서 그냥 안씀
+        # data = [{
+        #     'Groups': instance['SecurityGroups'][0]['GroupName'],
+        #     'Label': next((tag['Value'] for tag in instance['Tags'] if tag['Key'] == 'Name'), ''),
+        #     'Hostname/IP': instance['PrivateIpAddress'],
+        #     'Tags': instance['Tags'],
+        #     'Protocol': 'ssh',
+        #     'Port': '22'
+        # } for reservation in response.get('Reservations', []) for instance in reservation.get('Instances', []) if instance.get('State', {}).get('Name', '') == 'running']
+
+                    
         df = pd.DataFrame(data, columns=['Groups', 'Label', 'Tags', 'Hostname/IP', 'Protocol', 'Port'])
+        # utf-8 로저장하면 한글이 깨지는데 정작 terminus에서는 제대로 인식함
         df.to_csv('terminus_import.csv', index=False, encoding='utf-8')
 
     def change_instance_name(self, name:str):    
@@ -79,6 +105,15 @@ class awscliService:
             tag = 'Manage'
         else :
             tag = 'ETC'  
+
+        if '11' in name :
+            name += ' 1호기'
+        elif '21' in name :
+            name += ' 2호기'
+        elif '12' in name :
+            name += ' 3호기'
+        elif '22' in name :
+            name += ' 4호기'
         
         return name, group, tag
 
