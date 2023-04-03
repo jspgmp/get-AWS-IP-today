@@ -40,14 +40,15 @@ class awscliService:
                         for tag in instance['Tags']:
                             if tag['Key'] == 'Name':
                                 name = tag['Value']
-                        name, group, tag = self.change_instance_name(name)
+                        name, group, terminusTag = self.change_instance_name(name)
                         print("instance Name: ", name)
+                        print("instance Tag:", terminusTag)
                         print("PrivateIpAddress", instance['PrivateIpAddress'])
                         data.append({
                             'Groups':group,
                             'Label': name,
                             'Hostname/IP': instance['PrivateIpAddress'],
-                            'Tags':tag,
+                            'Tags':terminusTag,
                             'Protocol': 'ssh',
                             'Port': '22'
                         })
@@ -79,8 +80,6 @@ class awscliService:
         tag = ''
         if '개발' in name :
             tag = 'Dev'        
-        elif 'WEB' in name:
-            tag = 'WEB'
         elif 'IBE' in name:
             tag = 'IBE'
         elif 'Kiosk' in name:
@@ -91,7 +90,7 @@ class awscliService:
             tag = 'OTA'
         elif 'PAY' in name:
             tag = 'PAY'
-        elif '메세지' in name:
+        elif '메시지' in name:
             tag = 'mtma'
         elif '홈페이지' in name:
             tag = 'hcws'
@@ -104,7 +103,18 @@ class awscliService:
         elif '관리' in name :
             tag = 'Manage'
         else :
-            tag = 'ETC'  
+            tag = 'ETC'
+
+        if 'AP' in name:
+            if tag is not None:
+                tag += ', AP'
+            else :
+                tag += 'AP'
+        elif 'WEB' in name:
+            if tag is not None:
+                tag += ', WEB'
+            else :
+                tag += 'AP'
 
         if '11' in name :
             name += ' 1호기'
